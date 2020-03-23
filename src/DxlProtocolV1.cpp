@@ -9,64 +9,96 @@ uint8_t calcChkSum(uint8_t* buffer, size_t size) {
   return ~x;
 }
 
-DxlReaderV1::DxlReaderV1() 
-: DxlReaderBase() {}
-
-uint8_t DxlReaderV1::beginRead() {
-  uint8_t status = 0x80;  // custom error
+bool DxlProtocolV1::beginRxRead() {
+  bool success = false;
   size_t size = 0;
   uint8_t chksum;
 
-  idx_ = 0;
-  readable_size_ = 0;
+  rx_idx_ = 0;
+  rx_readable_size_ = 0;
 
-  if (buffer_ == nullptr) {
+  if (rx_buf_ == nullptr) {
     // this is an error
-  } else if (buffer_[0] != 0xff && buffer_[1] != 0xff) {
+  } else if (rx_buf_[0] != 0xff && rx_buf_[1] != 0xff) {
     // this is an error
-  } else if (buffer_[2] == 0xff) {
+  } else if (rx_buf_[2] == 0xff) {
     // this is an error
   } else {
-    size = static_cast<size_t>(buffer_[3]);
-    if (size <= buffer_size_ && (size + 4) <= buffer_size_) {
-      chksum = calcChkSum(&buffer_[2], size);
-      if (chksum == buffer_[size + 2]) {
-        status = buffer_[4];
-          idx_ = 5;
-          readable_size_ = size + 3;
+    size = static_cast<size_t>(rx_buf_[Reg::kSize]);
+    if (size <= rx_buf_size_ && (size + 4) <= rx_buf_size_) {
+      chksum = calcChkSum(&rx_buf_[2], size);
+      if (chksum == rx_buf_[size + 3]) {
+        success = true;
+        rx_idx_ = 5;
+        rx_readable_size_ = size + 3;
       }
     }
   }
-  return status;
+  return success;
 }
 
-uint8_t DxlReaderV1::getId() {
-  return buffer_[2];
-}
-
-size_t DxlReaderV1::getSize() {
-  return static_cast<size_t>(buffer_[4]);
-}
-
-
-size_t DxlWriterV1::finalize() {
-  uint8_t chksum = 0;
-  if (idx_ < 3) {
-    // this is an error.
-    idx_ = 0;
-    writable_size_ = 0;
-  } else if (idx_ < writable_size_) {
-    buffer_[3] = static_cast<uint8_t>(idx_ - 3);
-    chksum = calcChkSum(&buffer_[2], idx_ - 2);
-    buffer_[idx_++] = chksum;
-    writable_size_ = idx_;  // prevent further changes
+uint8_t DxlProtocolV1::getRxId() {
+  uint8_t value = 0xff;
+  if (rx_readable_size_ >= 2) {
+    value = rx_buf_[2];
   }
-  return idx_;
+  return value;
 }
 
-void DxlWriterV1::setInstruction(uint8_t id, uint8_t ins_code) {
-  buffer_[2] = id;
-  buffer_[4] = ins_code;
-  idx_ = 5;
-  writable_size_ = buffer_size_ - 1;
+size_t DxlProtocolV1::getRxSize() {
+  uint8_t value = 0xff;
+  if (rx_readable_size_ >= 2) {
+    value = static_cast<size_t>(rx_buf_[4]);
+  }
+  return value;
+}
+
+uint8_t DxlProtocolV1::getRxStatusByte() {
+  uint8_t value = 0xff;
+  if (rx_readable_size_ >= 2) {
+    value = rx_buf_[Reg::kStatus];
+  }
+  return value;
+}
+
+size_t DxlProtocolV1::estimateRxSize() {
+  size_t est = 0;
+  if (tx_writable_size_ != tx_idx_ || tx_writable_size_==0) {
+    est = 0;
+  } else if (tx_buf_[Reg::kId] == Ins::kBroadcastId) {
+    est = 0;
+  } else if (tx_buf_[Reg::kIns] == Ins::kSyncWrite) {
+    est = 0;
+  } else if (tx_buf_[Reg::kId]==Ins::kPing) {
+    est = 6;
+  } else if (tx_buf_[Reg::kId]==Ins::kWrite) {
+    est = 6;
+  } else if (tx_buf_[Reg::kId]==Ins::kRead) {
+    est = tx_buf_[6];
+  }
+  return est;
+}
+
+size_t DxlProtocolV1::finalizeTx() {
+  uint8_t chksum = 0;
+  if (tx_idx_ < 3) {
+    // this is an error.
+    tx_idx_ = 0;
+    tx_writable_size_ = 0;
+  } else if (tx_idx_ <= tx_writable_size_) {
+    tx_buf_[Reg::kSize] = static_cast<uint8_t>(tx_idx_ - 3);
+    chksum = calcChkSum(&tx_buf_[2], tx_idx_ - 2);
+    tx_buf_[tx_idx_++] = chksum;
+    tx_writable_size_ = tx_idx_;  // prevent further changes
+  }
+  return tx_idx_;
+}
+
+void DxlProtocolV1::initTxData(uint8_t id, uint8_t ins_code) {
+  tx_buf_[0] = 0xff;
+  tx_buf_[1] = 0xff;
+  tx_buf_[Reg::kId] = id;
+  tx_buf_[Reg::kIns] = ins_code;
+  tx_idx_ = 5;
+  tx_writable_size_ = tx_buf_size_ - 1;
 }
