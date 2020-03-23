@@ -26,7 +26,7 @@ bool DxlProtocolV1::beginRxRead() {
   } else {
     size = static_cast<size_t>(rx_buf_[Reg::kSize]);
     if (size <= rx_buf_size_ && (size + 4) <= rx_buf_size_) {
-      chksum = calcChkSum(&rx_buf_[2], size);
+      chksum = calcChkSum(&rx_buf_[Reg::kId], size + 1);
       if (chksum == rx_buf_[size + 3]) {
         success = true;
         rx_idx_ = 5;
@@ -69,12 +69,12 @@ size_t DxlProtocolV1::estimateRxSize() {
     est = 0;
   } else if (tx_buf_[Reg::kIns] == Ins::kSyncWrite) {
     est = 0;
-  } else if (tx_buf_[Reg::kId]==Ins::kPing) {
+  } else if (tx_buf_[Reg::kIns]==Ins::kPing) {
     est = 6;
-  } else if (tx_buf_[Reg::kId]==Ins::kWrite) {
+  } else if (tx_buf_[Reg::kIns]==Ins::kWrite) {
     est = 6;
-  } else if (tx_buf_[Reg::kId]==Ins::kRead) {
-    est = tx_buf_[6];
+  } else if (tx_buf_[Reg::kIns]==Ins::kRead) {
+    est = 6 + tx_buf_[6];
   }
   return est;
 }

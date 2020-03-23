@@ -13,7 +13,7 @@ class DxlProtocolV1 : public DxlProtocolBase {
     kId = 2,
     kSize = 3,
     kIns = 4,
-    kStatus = 4,
+    kStatus = 4
   };
  public:
   enum Ins : uint8_t {
