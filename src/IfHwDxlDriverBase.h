@@ -23,7 +23,7 @@ class IfHwDxlDriverBase {
   virtual uint8_t read() = 0;
 
   /// starts a transmission. [expected_reply_size] is used to estimate the timeout
-  virtual void beginTransmission(uint8_t* tx_buf, size_t tx_buf_size, uint8_t* rx_buf, size_t rx_buf_size, size_t expected_reply_size) = 0;
+  virtual void beginTransmission(uint8_t* tx_buf, size_t tx_buf_size, size_t expected_reply_size) = 0;
 };
 
 

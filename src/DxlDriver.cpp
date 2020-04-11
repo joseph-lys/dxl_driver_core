@@ -23,7 +23,7 @@ DxlDriver::Status DxlDriver::beginTransmission() {
 
   has_valid_rx_ = false;
   if (tx_size > 0) {
-    driver_->beginTransmission(tx_buf_, tx_size, rx_buf_, rx_buf_size_, expected_rx_size_);
+    driver_->beginTransmission(tx_buf_, tx_size, expected_rx_size_);
     status_ = Status::kTransmitting;
   } else {
     status_ = Status::kErrorInvalidTransmitData;
