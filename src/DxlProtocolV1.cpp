@@ -25,7 +25,9 @@ bool DxlProtocolV1::beginRxRead() {
     // this is an error
   } else {
     size = static_cast<size_t>(rx_buf_[Reg::kSize]);
-    if (size <= rx_buf_size_ && (size + 4) <= rx_buf_size_) {
+    if (size < 1) {
+      // this is an error, not enough bytes
+    } else if (size <= rx_buf_size_ && (size + 4) <= rx_buf_size_) {
       chksum = calcChkSum(&rx_buf_[Reg::kId], size + 1);
       if (chksum == rx_buf_[size + 3]) {
         success = true;

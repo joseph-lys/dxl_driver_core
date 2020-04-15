@@ -39,13 +39,14 @@ DxlDriver::Status DxlDriver::beginTransmission() {
 
 DxlDriver::Status DxlDriver::poll() {
   size_t i;
+  size_t available_bytes = driver_->available();
   if(status_ == Status::kTransmitting) {
     if (driver_->txIsDone()) {
       status_ = kReceiving;
     }
   }
   if(status_ == Status::kReceiving && expected_rx_size_ > 0) {
-    if (driver_->available() >= expected_rx_size_) {  
+    if (available_bytes >= expected_rx_size_) {  
       // more bytes to rx buffer
       for (i=0; i<expected_rx_size_; i++) {
         rx_buf_[i] = driver_->read();
@@ -69,15 +70,19 @@ DxlDriver::Status DxlDriver::poll() {
         status_ = kDone;
       } else {
         // try to read data that was received.
-        i = 0;
-        while (driver_->available() && i < rx_buf_size_) {
-          rx_buf_[i] = driver_->read();
-        }
-        if (protocol_->beginRxRead()) {
-          status_ = kDone;
-        } else {
+        if (driver_->available() < 4) {
           status_ = kErrorTimeout;
-        }
+        } else {
+          i = 0;
+          while (driver_->available() && i < rx_buf_size_) {
+            rx_buf_[i] = driver_->read();
+          }
+          if (protocol_->beginRxRead()) {
+            status_ = kDone;
+          } else {
+            status_ = kErrorTimeout;
+          }
+        }        
       }
     }
   }
