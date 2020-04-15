@@ -2,10 +2,10 @@
 
 
 DxlDriver::DxlDriver(
-    DxlProtocolBase* protocol, 
-    size_t rx_size, 
-    size_t tx_size, 
-    IfHwDxlDriverBase& driver) : DxlDriver() {
+DxlProtocolBase* protocol,
+size_t rx_size,
+size_t tx_size,
+IfHwDxlDriverBase& driver) : DxlDriver() {
   protocol_ = protocol;
   rx_buf_ = new uint8_t[rx_size];
   tx_buf_ = new uint8_t[rx_size];
@@ -14,7 +14,13 @@ DxlDriver::DxlDriver(
   driver_ = &driver;
   protocol_->setRxBuffer(rx_buf_, rx_buf_size_);
   protocol_->setTxBuffer(tx_buf_, tx_buf_size_);
-} 
+}
+
+DxlDriver::~DxlDriver() { 
+  delete[] rx_buf_;
+  delete[] tx_buf_;
+  delete protocol_; 
+}
 
 DxlDriver::Status DxlDriver::beginTransmission() {
   size_t i;
@@ -38,8 +44,8 @@ DxlDriver::Status DxlDriver::poll() {
       status_ = kReceiving;
     }
   }
-  if(status_ == Status::kReceiving && expected_rx_size_ > 0)
-    if (driver_->available() >= expected_rx_size_) {
+  if(status_ == Status::kReceiving && expected_rx_size_ > 0) {
+    if (driver_->available() >= expected_rx_size_) {  
       // more bytes to rx buffer
       for (i=0; i<expected_rx_size_; i++) {
         rx_buf_[i] = driver_->read();
@@ -53,6 +59,7 @@ DxlDriver::Status DxlDriver::poll() {
         status_ = kDone;
       } else {
       status_ = kErrorInvalidReceiveData;
+      }      
     }
   }
   if (status_ == Status::kReceiving) {
