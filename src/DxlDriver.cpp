@@ -75,7 +75,7 @@ DxlDriver::Status DxlDriver::poll() {
         } else {
           i = 0;
           while (driver_->available() && i < rx_buf_size_) {
-            rx_buf_[i] = driver_->read();
+            rx_buf_[i++] = driver_->read();
           }
           if (protocol_->beginRxRead()) {
             status_ = kDone;
