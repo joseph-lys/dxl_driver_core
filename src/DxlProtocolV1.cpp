@@ -21,6 +21,8 @@ bool DxlProtocolV1::beginRxRead() {
     // this is an error
   } else if (rx_buf_[0] != 0xff && rx_buf_[1] != 0xff) {
     // this is an error
+  } else if (rx_buf_[2] != tx_buf_[2]) {
+    // this is an error, mismatched response
   } else if (rx_buf_[2] == 0xff) {
     // this is an error
   } else {
@@ -80,6 +82,7 @@ size_t DxlProtocolV1::estimateRxSize() {
   }
   return est;
 }
+
 
 size_t DxlProtocolV1::finalizeTx() {
   uint8_t chksum = 0;

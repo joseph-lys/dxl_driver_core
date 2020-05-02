@@ -42,7 +42,7 @@ protected:
 
   /// get one byte and increment the read index, return 0xffff if error
   inline uint16_t readRxWord(); 
-
+  
   /// estimate the number or expected Rx bytes based on the Tx Data
   virtual size_t estimateRxSize() = 0;
   

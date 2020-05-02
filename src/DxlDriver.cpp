@@ -23,16 +23,21 @@ DxlDriver::~DxlDriver() {
 }
 
 DxlDriver::Status DxlDriver::beginTransmission() {
-  size_t i;
-  size_t tx_size = protocol_->finalizeTx();
+  size_t i, tx_size;
+  status_ = Status::kErrorInvalidTransmitData;
+  tx_size  = protocol_->finalizeTx();
   expected_rx_size_ = protocol_->estimateRxSize();
 
   has_valid_rx_ = false;
+  while (driver_->available()) {  // flush the receiver
+    driver_->read();
+  }
+  for (i=0; i<3; i++) {
+    rx_buf_[i] = 0;    
+  }
   if (tx_size > 0) {
     driver_->beginTransmission(tx_buf_, tx_size, expected_rx_size_);
     status_ = Status::kTransmitting;
-  } else {
-    status_ = Status::kErrorInvalidTransmitData;
   }
   return status_;
 }
@@ -51,10 +56,6 @@ DxlDriver::Status DxlDriver::poll() {
       for (i=0; i<expected_rx_size_; i++) {
         rx_buf_[i] = driver_->read();
       }
-      // burn extra characters
-      while (driver_->available()) {
-        driver_->read();
-      }
       // check if valid
       if (protocol_->beginRxRead()) {
         status_ = kDone;
@@ -68,20 +69,17 @@ DxlDriver::Status DxlDriver::poll() {
       if (expected_rx_size_ == 0) {  
         // there was no expected response. so consider done!
         status_ = kDone;
+      } else if (driver_->available() < 4) {
+        status_ = kErrorTimeout;
       } else {
-        // try to read data that was received.
-        if (driver_->available() < 4) {
-          status_ = kErrorTimeout;
+        i = 0;
+        while (driver_->available() > 0 && i < rx_buf_size_) {
+          rx_buf_[i++] = driver_->read();
+        }
+        if (protocol_->beginRxRead()) {
+          status_ = kDone;
         } else {
-          i = 0;
-          while (driver_->available() && i < rx_buf_size_) {
-            rx_buf_[i++] = driver_->read();
-          }
-          if (protocol_->beginRxRead()) {
-            status_ = kDone;
-          } else {
-            status_ = kErrorTimeout;
-          }
+          status_ = kErrorTimeout;
         }        
       }
     }
