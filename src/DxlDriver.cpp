@@ -44,14 +44,14 @@ DxlDriver::Status DxlDriver::beginTransmission() {
 
 DxlDriver::Status DxlDriver::poll() {
   size_t i;
-  size_t available_bytes = driver_->available();
+  volatile size_t available_bytes = driver_->available();
   if(status_ == Status::kTransmitting) {
     if (driver_->txIsDone()) {
       status_ = kReceiving;
     }
   }
   if(status_ == Status::kReceiving && expected_rx_size_ > 0) {
-    if (available_bytes >= expected_rx_size_) {  
+    if (driver_->available() >= expected_rx_size_) {  
       // more bytes to rx buffer
       for (i=0; i<expected_rx_size_; i++) {
         rx_buf_[i] = driver_->read();
