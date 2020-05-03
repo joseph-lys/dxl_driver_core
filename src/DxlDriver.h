@@ -44,11 +44,7 @@ class DxlDriver {
   DxlDriver& operator=(DxlDriver&&) = default;  // default copy constructor
 
   /// Destructor
-  ~DxlDriver() { 
-    delete[] rx_buf_;
-    delete[] tx_buf_;
-    delete protocol_; 
-  }
+  ~DxlDriver();
 
   /// Get the reply status byte, does not increment the read index
   inline uint8_t getRxStatusByte();

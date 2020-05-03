@@ -20,7 +20,8 @@ class IfHwDxlDriverBase {
   virtual bool isTimeout() = 0;
 
   /// read one byte from the buffer
-  virtual uint8_t read() = 0;
+  /// @return a byte of data, return -1 if error
+  virtual int read() = 0;
 
   /// starts a transmission. [expected_reply_size] is used to estimate the timeout
   virtual void beginTransmission(uint8_t* tx_buf, size_t tx_buf_size, size_t expected_reply_size) = 0;
